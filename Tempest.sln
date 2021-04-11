@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31129.286
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tempest", "Tempest\Tempest.csproj", "{54BB73B2-1E92-4487-919D-86EB2BBD9B82}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{54BB73B2-1E92-4487-919D-86EB2BBD9B82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54BB73B2-1E92-4487-919D-86EB2BBD9B82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54BB73B2-1E92-4487-919D-86EB2BBD9B82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54BB73B2-1E92-4487-919D-86EB2BBD9B82}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {015AF567-22D4-4D4C-86A6-97233A3F6CBA}
+	EndGlobalSection
+EndGlobal
