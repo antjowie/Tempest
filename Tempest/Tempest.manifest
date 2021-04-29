@@ -1,0 +1,7 @@
+ManifestFileVersion: 0
+CRC: 844685015
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: tempest_assets
+      Dependencies: {}

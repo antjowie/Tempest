@@ -2,95 +2,132 @@
 using R2API;
 using R2API.Utils;
 using RoR2;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Tempest.Items;
 using UnityEngine;
 
 namespace Tempest
 {
-    // It's a small plugin that adds a relatively simple item to the game, and gives you that item whenever you press F2.
-    [BepInDependency("com.bepis.r2api")]
+    /**
+     * Tempest is a general Risk of Rain 2 content mod. A little experiment project in which we add items, equipment and whatever else comes to mind
+     * Special thanks to KomradeSpectre. His mod Aetherium has been referenced a lot during the development of this project
+     * You can see that mod here: https://github.com/KomradeSpectre/AetheriumMod
+     */
+
+    //[BepInDependency("com.bepis.r2api")]
     [BepInPlugin(ModGUID, ModName, ModVer)]
-    [R2APISubmoduleDependency(nameof(ItemAPI), nameof(ItemDropAPI), nameof(LanguageAPI))]
+    [BepInDependency(R2API.R2API.PluginGUID, R2API.R2API.PluginVersion)]
+    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.EveryoneNeedSameModVersion)]
+    [R2APISubmoduleDependency(nameof(ItemAPI), nameof(ItemDropAPI), nameof(ProjectileAPI), 
+                              nameof(LanguageAPI), nameof(PrefabAPI), nameof(ResourcesAPI))]
     public class Tempest : BaseUnityPlugin
     {
         public const string ModGUID = "com.tomodachi.tempest";
         public const string ModName = "Tempest";
         public const string ModVer = "0.0.1";
 
-        // We need our item definition to persist through our functions, and therefore make it a class field.
-        private static ItemDef myItemDef;
+        internal static BepInEx.Logging.ManualLogSource ModLogger;
 
+        public List<BaseItem> Items = new List<BaseItem>();
+
+        public static AssetBundle MainAssets;
         public void Awake()
         {
-            myItemDef = new ItemDef
+            ModLogger = this.Logger;
+
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Tempest.tempest_assets"))
             {
-                name = "EXAMPLE_CLOAKONKILL_NAME",
-                nameToken = "EXAMPLE_CLOAKONKILL_NAME",
-                pickupToken = "EXAMPLE_CLOAKONKILL_PICKUP",
-                descriptionToken = "EXAMPLE_CLOAKONKILL_DESC",
-                loreToken = "EXAMPLE_CLOAKONKILL_LORE",
-                tier = ItemTier.Tier2,
-                //pickupIconPath = "Textures/MiscIcons/texMysteryIcon",
-                //pickupModelPath = "Prefabs/PickupModels/PickupMystery",
-                canRemove = true,
-                hidden = false
-            };
-            AddTokens();
+                MainAssets = AssetBundle.LoadFromStream(stream);
+            }
 
-            // You can add your own display rules here, where the first argument passed are the
-            // default display rules: the ones used when no specific display rules for a character are found.
-            // For this example, we are omitting them, as they are quite a pain to set up.
-            var displayRules = new ItemDisplayRuleDict(null);
-
-            ItemAPI.Add(new CustomItem(myItemDef, displayRules));
-
-            // But now we have defined an item, but it doesn't do anything yet. So we'll need to define that ourselves.
-            GlobalEventManager.onCharacterDeathGlobal += GlobalEventManager_onCharacterDeathGlobal;
-        }
-
-        private void GlobalEventManager_onCharacterDeathGlobal(DamageReport report)
-        {
-            // If a character was killed by the world, we shouldn't do anything.
-            if (!report.attacker || !report.attackerBody)
-                return;
-
-            CharacterBody attacker = report.attackerBody;
-            // We need an inventory to do check for our item
-            if (attacker.inventory)
+            ModLogger.LogInfo("----------------------ASSETS--------------------");
+            foreach(var asset in MainAssets.GetAllAssetNames())
             {
-                ChatMessage.SendColored("Rolled the item", Color.red);
-                // store the amount of our item we have
-                int itemCount = attacker.inventory.GetItemCount(myItemDef.itemIndex);
-                if (itemCount > 0 &&
-                    // Roll for our 5% chance.
-                    Util.CheckRoll(5, attacker.master))
+                ModLogger.LogMessage(asset);
+            }
+
+            // Add all items we've created
+            ModLogger.LogInfo("----------------------ITEMS--------------------");
+
+            var ItemTypes = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(BaseItem)));
+            foreach (var itemType in ItemTypes)
+            {
+                BaseItem item = (BaseItem)System.Activator.CreateInstance(itemType);
+                if (ValidateItem(item, Items))
                 {
-                    // Since we passed all checks, we now give our attacker the cloaked buff.
-                    // For some reason BuffIndex enum only has -1 for us?
-                    //attacker.AddTimedBuff(BuffIndex.Cloak, 3 + (garbCount));
+                    item.Init(Config);
+
+                    ModLogger.LogInfo("Item: " + item.ItemName + " Initialized!");
                 }
             }
         }
-
-        private void AddTokens()
+        public bool ValidateItem(BaseItem item, List<BaseItem> itemList)
         {
-            R2API.LanguageAPI.Add("EXAMPLE_CLOAKONKILL_NAME", "Cuthroat's Garb");
-            R2API.LanguageAPI.Add("EXAMPLE_CLOAKONKILL_PICKUP", "Chance to cloak on kill");
-            R2API.LanguageAPI.Add("EXAMPLE_CLOAKONKILL_DESC", "Whenever you <style=cIsDamage>kill an enemy</style>, you have a <style=cIsUtility>5%</style> chance to cloak for <style=cIsUtility>4s</style> <style=cStack>(+1s per stack)</style.");
-            R2API.LanguageAPI.Add("EXAMPLE_CLOAKONKILL_LORE", "Those who visit in the night are either praying for a favour, or preying on a neighbour.");
+            var enabled = Config.Bind<bool>("Item: " + item.ItemName, "Enable Item?", true, "Should this item appear in runs?").Value;
+            var aiBlacklist = Config.Bind<bool>("Item: " + item.ItemName, "Blacklist Item from AI Use?", false, "Should the AI not be able to obtain this item?").Value;
+
+            if (enabled)
+            {
+                itemList.Add(item);
+                if (aiBlacklist)
+                {
+                    item.AIBlacklisted = true;
+                }
+            }
+            return enabled;
         }
 
         public void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F2))
+            // Spawn a random item Tier 1 item
+            int tier = 0;
+            if (Input.GetKeyDown(KeyCode.F1)) tier = 1;
+            if (Input.GetKeyDown(KeyCode.F2)) tier = 2;
+            if (Input.GetKeyDown(KeyCode.F3)) tier = 3;
+            if (Input.GetKeyDown(KeyCode.F4)) 
             {
                 var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Artifacts.commandArtifactDef.artifactIndex), transform.position, transform.forward * 20f);
 
-                // Get a random item from all possible pickups
-                var items = PickupCatalog.allPickups;
-                int index = Random.Range(0, items.Count());
-                //PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(myItemDef.itemIndex), transform.position, transform.forward * 20f);
-                PickupDropletController.CreatePickupDroplet(items.ElementAt(index).pickupIndex, transform.position, transform.forward * 20f);
+            }
+            //if (Input.GetKeyDown(KeyCode.F5))
+            //{
+            //    var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+            //    PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(Items[0].ItemDef.itemIndex), transform.position, transform.forward * 20f);
+            //}
+
+            if (tier != 0)
+            {
+                List<PickupIndex> list = new List<PickupIndex>();
+                switch (tier)
+                {
+                    case 1:
+                        list = Run.instance.availableTier1DropList;
+                        break;
+                    case 2:
+                        list = Run.instance.availableTier2DropList;
+                        break;
+                    case 3:
+                        list = Run.instance.availableTier3DropList;
+                        break;
+                }
+
+                int index = Random.Range(0, list.Count);
+                ModLogger.LogInfo($"index {index} cap {list.Count}");
+
+                var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+                PickupDropletController.CreatePickupDroplet(list[index], transform.position, transform.forward * 20f);
+
+                //PickupDropletController
+                //var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+                //ItemDropAPI.ChestItems.Tier1
+                //// Get a random item from all possible pickups
+                //var items = PickupCatalog.allPickups;
+                //int index = Random.Range(0, items.Count());
+                ////PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(myItemDef.itemIndex), transform.position, transform.forward * 20f);
+                //PickupDropletController.CreatePickupDroplet(items.ElementAt(index).pickupIndex, transform.position, transform.forward * 20f);
             }
         }
     }
