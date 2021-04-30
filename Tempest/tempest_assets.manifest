@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 2664743692
+CRC: 1599552440
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: f6083ec44973a8db0c5c9b4475e158f4
+    Hash: b5e78586639d67829f019c2d932edf8b
   TypeTreeHash:
     serializedVersion: 2
     Hash: 21747e4ee48f36c7a65f9afbfd77f392
@@ -28,7 +28,10 @@ ClassTypes:
 - Class: 213
   Script: {instanceID: 0}
 Assets:
+- Assets/Textures/Materials/Items/Gemini/GeminiMeterial.mat
+- Assets/Models/Prefabs/Items/Gemini/Gemini.prefab
 - Assets/Textures/Icons/Items/ReflectiveAspect/ReflectiveAspectIcon.png
 - Assets/Models/Prefabs/Items/ReflectiveAspect/ReflectiveAspect.prefab
 - Assets/Textures/Materials/Items/ReflectiveAspect/ReflectiveAspectLambert.mat
+- Assets/Textures/Icons/Items/Gemini/GeminiIcon.png
 Dependencies: []

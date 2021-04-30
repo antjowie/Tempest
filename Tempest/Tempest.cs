@@ -5,6 +5,7 @@ using RoR2;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Tempest.Equipment;
 using Tempest.Items;
 using UnityEngine;
 
@@ -30,7 +31,8 @@ namespace Tempest
 
         internal static BepInEx.Logging.ManualLogSource ModLogger;
 
-        public List<BaseItem> Items = new List<BaseItem>();
+        public List<BaseItem> Items = new List<BaseItem>(); 
+        public List<BaseEquipment> Equipments = new List<BaseEquipment>();
 
         public static AssetBundle MainAssets;
         public void Awake()
@@ -62,7 +64,17 @@ namespace Tempest
                     ModLogger.LogInfo("Item: " + item.ItemName + " Initialized!");
                 }
             }
+            
+            var EquipmetTypes = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(BaseEquipment)));
+            foreach (var EquipmetType in EquipmetTypes)
+            {
+                BaseEquipment equipment = (BaseEquipment)System.Activator.CreateInstance(EquipmetType);
+                equipment.Init(Config);
+
+               ModLogger.LogInfo("Item: " + equipment.EquipmentName + " Initialized!");
+            }
         }
+
         public bool ValidateItem(BaseItem item, List<BaseItem> itemList)
         {
             var enabled = Config.Bind<bool>("Item: " + item.ItemName, "Enable Item?", true, "Should this item appear in runs?").Value;
@@ -86,7 +98,8 @@ namespace Tempest
             if (Input.GetKeyDown(KeyCode.F1)) tier = 1;
             if (Input.GetKeyDown(KeyCode.F2)) tier = 2;
             if (Input.GetKeyDown(KeyCode.F3)) tier = 3;
-            if (Input.GetKeyDown(KeyCode.F4)) 
+            if (Input.GetKeyDown(KeyCode.F4)) tier = 4;
+            if (Input.GetKeyDown(KeyCode.F5)) 
             {
                 var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
                 PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Artifacts.commandArtifactDef.artifactIndex), transform.position, transform.forward * 20f);
@@ -111,6 +124,9 @@ namespace Tempest
                         break;
                     case 3:
                         list = Run.instance.availableTier3DropList;
+                        break;
+                    case 4:
+                        list = Run.instance.availableEquipmentDropList;
                         break;
                 }
 

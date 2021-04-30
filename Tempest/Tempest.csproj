@@ -5,10 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Tempest" />
     <None Remove="tempest_assets" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Tempest" />
     <EmbeddedResource Include="tempest_assets" />
   </ItemGroup>
 

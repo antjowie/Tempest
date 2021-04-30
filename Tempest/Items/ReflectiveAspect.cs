@@ -47,9 +47,10 @@ namespace Tempest.Items
         public override ItemDisplayRuleDict CreateItemDisplayRules()
         {
             // This function defines how an item should show up on our character
-            ItemBodyModelPrefab = ItemModel;
-            var itemDisplay = ItemBodyModelPrefab.AddComponent<ItemDisplay>();
-            itemDisplay.rendererInfos = ItemDisplaySetup(ItemBodyModelPrefab);
+
+            //ItemBodyModelPrefab = ItemModel;
+            //var itemDisplay = ItemBodyModelPrefab.AddComponent<ItemDisplay>();
+            //itemDisplay.rendererInfos = ItemDisplaySetup(ItemBodyModelPrefab);
 
             ItemDisplayRuleDict rules = new ItemDisplayRuleDict(new ItemDisplayRule[]
             {
@@ -58,11 +59,11 @@ namespace Tempest.Items
                 new ItemDisplayRule
                 {
                     ruleType = ItemDisplayRuleType.ParentedPrefab,
-                    followerPrefab = ItemBodyModelPrefab,
+                    followerPrefab = ItemModel,
                     childName = "Chest",
                     localPos = new Vector3(0, 0, 0),
                     localAngles = new Vector3(0, 0, 0),
-                    localScale = new Vector3(5, 5, 5)
+                    localScale = new Vector3(1f, 1f, 1f)
                 }
             });
 
