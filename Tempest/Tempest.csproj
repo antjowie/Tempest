@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <RunPostBuildEvent>Always</RunPostBuildEvent>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,5 +41,9 @@
       <HintPath>Libs\Managed\UnityEngine.Networking.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="powershell -ExecutionPolicy Unrestricted $(SolutionDir)/Resources/copy.ps1 $(TargetName) $(OutDir) $(SolutionDir)" />
+  </Target>
   
 </Project>
