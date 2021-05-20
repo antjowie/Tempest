@@ -2,11 +2,14 @@
 using R2API;
 using R2API.Utils;
 using RoR2;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Tempest.Equipment;
 using Tempest.Items;
+using Tempest.Systems;
+using Tempest.Utils;
 using UnityEngine;
 
 namespace Tempest
@@ -21,7 +24,7 @@ namespace Tempest
     [BepInPlugin(ModGUID, ModName, ModVer)]
     [BepInDependency(R2API.R2API.PluginGUID, R2API.R2API.PluginVersion)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.EveryoneNeedSameModVersion)]
-    [R2APISubmoduleDependency(nameof(ItemAPI), nameof(ItemDropAPI), nameof(ProjectileAPI), 
+    [R2APISubmoduleDependency(nameof(ItemAPI), nameof(ItemDropAPI), nameof(ProjectileAPI),
                               nameof(LanguageAPI), nameof(PrefabAPI), nameof(ResourcesAPI))]
     public class Tempest : BaseUnityPlugin
     {
@@ -29,10 +32,13 @@ namespace Tempest
         public const string ModName = "Tempest";
         public const string ModVer = "0.0.1";
 
-        internal static BepInEx.Logging.ManualLogSource ModLogger;
+        public static BepInEx.Logging.ManualLogSource ModLogger;
 
-        public List<BaseItem> Items = new List<BaseItem>(); 
+        public event EventHandler OnUpdate = delegate { };
+
+        public List<BaseItem> Items = new List<BaseItem>();
         public List<BaseEquipment> Equipments = new List<BaseEquipment>();
+        public List<BaseSystem> Systems = new List<BaseSystem>();
 
         public static AssetBundle MainAssets;
         public void Awake()
@@ -44,15 +50,34 @@ namespace Tempest
                 MainAssets = AssetBundle.LoadFromStream(stream);
             }
 
-            ModLogger.LogInfo("----------------------ASSETS--------------------");
-            foreach(var asset in MainAssets.GetAllAssetNames())
+            //ModLogger.LogInfo("----------------------ASSETS--------------------");
+            //foreach (var asset in MainAssets.GetAllAssetNames())
+            //{
+            //    ModLogger.LogMessage(asset);
+            //}
+
+            if (Helpers.InDebugMode())
             {
-                ModLogger.LogMessage(asset);
+                ModLogger.LogWarning("Tempest has been compiled in debug mode!");
             }
 
-            // Add all items we've created
-            ModLogger.LogInfo("----------------------ITEMS--------------------");
+            ModLogger.LogInfo("----------------------SYSTEMS--------------------");
+            var SystemTypes = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(BaseSystem)));
+            foreach (var systemType in SystemTypes)
+            {
+                BaseSystem system = (BaseSystem)System.Activator.CreateInstance(systemType);
 
+                if (!Helpers.InDebugMode() && system.StripFromRelease)
+                {
+                    ModLogger.LogWarning("System: " + systemType.Name + " stripped from release!");
+                    continue;
+                }
+
+                system.Init(this);
+                ModLogger.LogInfo("System: " + systemType.Name + " initialized!");
+            }
+
+            ModLogger.LogInfo("----------------------ITEMS--------------------");
             var ItemTypes = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(BaseItem)));
             foreach (var itemType in ItemTypes)
             {
@@ -61,18 +86,25 @@ namespace Tempest
                 {
                     item.Init(Config);
 
-                    ModLogger.LogInfo("Item: " + item.ItemName + " Initialized!");
+                    ModLogger.LogInfo("Item: " + item.ItemName + " initialized!");
+                }
+                else
+                {
+                    ModLogger.LogWarning("Item: " + item.ItemName + " disabled!");
                 }
             }
-            
+
+            ModLogger.LogInfo("----------------------EQUIPMENT--------------------");
             var EquipmetTypes = Assembly.GetExecutingAssembly().GetTypes().Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(BaseEquipment)));
             foreach (var EquipmetType in EquipmetTypes)
             {
                 BaseEquipment equipment = (BaseEquipment)System.Activator.CreateInstance(EquipmetType);
                 equipment.Init(Config);
 
-               ModLogger.LogInfo("Item: " + equipment.EquipmentName + " Initialized!");
+                ModLogger.LogInfo("Equpment: " + equipment.EquipmentName + " initialized!");
             }
+
+            ModLogger.LogInfo("----------------------TEMPEST DONE--------------------");
         }
 
         public bool ValidateItem(BaseItem item, List<BaseItem> itemList)
@@ -93,58 +125,7 @@ namespace Tempest
 
         public void Update()
         {
-            // Spawn a random item Tier 1 item
-            int tier = 0;
-            if (Input.GetKeyDown(KeyCode.F1)) tier = 1;
-            if (Input.GetKeyDown(KeyCode.F2)) tier = 2;
-            if (Input.GetKeyDown(KeyCode.F3)) tier = 3;
-            if (Input.GetKeyDown(KeyCode.F4)) tier = 4;
-            if (Input.GetKeyDown(KeyCode.F5)) 
-            {
-                var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Artifacts.commandArtifactDef.artifactIndex), transform.position, transform.forward * 20f);
-
-            }
-            //if (Input.GetKeyDown(KeyCode.F5))
-            //{
-            //    var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-            //    PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(Items[0].ItemDef.itemIndex), transform.position, transform.forward * 20f);
-            //}
-
-            if (tier != 0)
-            {
-                List<PickupIndex> list = new List<PickupIndex>();
-                switch (tier)
-                {
-                    case 1:
-                        list = Run.instance.availableTier1DropList;
-                        break;
-                    case 2:
-                        list = Run.instance.availableTier2DropList;
-                        break;
-                    case 3:
-                        list = Run.instance.availableTier3DropList;
-                        break;
-                    case 4:
-                        list = Run.instance.availableEquipmentDropList;
-                        break;
-                }
-
-                int index = Random.Range(0, list.Count);
-                ModLogger.LogInfo($"index {index} cap {list.Count}");
-
-                var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                PickupDropletController.CreatePickupDroplet(list[index], transform.position, transform.forward * 20f);
-
-                //PickupDropletController
-                //var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                //ItemDropAPI.ChestItems.Tier1
-                //// Get a random item from all possible pickups
-                //var items = PickupCatalog.allPickups;
-                //int index = Random.Range(0, items.Count());
-                ////PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(myItemDef.itemIndex), transform.position, transform.forward * 20f);
-                //PickupDropletController.CreatePickupDroplet(items.ElementAt(index).pickupIndex, transform.position, transform.forward * 20f);
-            }
+            OnUpdate(this, EventArgs.Empty);
         }
     }
 }
