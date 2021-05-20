@@ -20,12 +20,8 @@ namespace Tempest.Systems
                 if (Input.GetKeyDown(KeyCode.F2)) tier = 2;
                 if (Input.GetKeyDown(KeyCode.F3)) tier = 3;
                 if (Input.GetKeyDown(KeyCode.F4)) tier = 4;
-                if (Input.GetKeyDown(KeyCode.F5))
-                {
-                    var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                    PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Artifacts.commandArtifactDef.artifactIndex), transform.position, transform.forward * 20f);
+                if (Input.GetKeyDown(KeyCode.F5)) tier = 5;
 
-                }
                 //if (Input.GetKeyDown(KeyCode.F5))
                 //{
                 //    var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
@@ -49,6 +45,9 @@ namespace Tempest.Systems
                         case 4:
                             list = Run.instance.availableEquipmentDropList;
                             break;
+                        case 5:
+                            list = Run.instance.availableLunarEquipmentDropList;
+                            break;
                     }
 
                     int index = UnityEngine.Random.Range(0, list.Count);
@@ -65,6 +64,16 @@ namespace Tempest.Systems
                     //int index = Random.Range(0, items.Count());
                     ////PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(myItemDef.itemIndex), transform.position, transform.forward * 20f);
                     //PickupDropletController.CreatePickupDroplet(items.ElementAt(index).pickupIndex, transform.position, transform.forward * 20f);
+                }
+
+                if (Input.GetKeyDown(KeyCode.F7))
+                {
+                    if (TeleporterInteraction.instance)
+                    {
+                        TeleporterInteraction.instance.AddShrineStack();
+                    }
+                    //CharacterBody component = interactor.GetComponent<CharacterBody>();
+                    Chat.AddMessage("ORDER");
                 }
             };
         }
