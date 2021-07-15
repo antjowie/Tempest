@@ -135,7 +135,10 @@ namespace Tempest.Items
         {
             // If a character was killed by the world, we shouldn't do anything.
             if (!damageInfo.attacker || !damageInfo.inflictor)
+            {
+                orig(self, damageInfo);
                 return;
+            }            
 
             // We need an inventory to do check for our item
             var count = ItemCount(this, self.body);
@@ -177,7 +180,7 @@ namespace Tempest.Items
                     projectileInfo.rotation = RoR2.Util.QuaternionSafeLookRotation(positionChosen - damageInfo.position);
 
                     ProjectileManager.instance.FireProjectile(projectileInfo);
-                //}
+                }
             }
 
             orig(self, damageInfo);
