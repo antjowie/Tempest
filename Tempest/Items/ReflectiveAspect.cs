@@ -134,8 +134,10 @@ namespace Tempest.Items
         private void OnTakeDamage(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
         {
             // If a character was killed by the world, we shouldn't do anything.
-            if (!damageInfo.attacker || !damageInfo.inflictor)
+            if (!damageInfo.attacker || !damageInfo.inflictor) {
+                orig(self, damageInfo);
                 return;
+            }
 
             // We need an inventory to do check for our item
             var count = ItemCount(this, self.body);
@@ -145,7 +147,7 @@ namespace Tempest.Items
                 var body = self.GetComponent<RoR2.CharacterBody>();
                 var damage = damageInfo.damage * (DamageFactor + AdditionalDamagePerStack * count) * 100;
 
-                if(Helpers.InDebugMode()) ModLogger.LogInfo($"Got {damageInfo.damage} damage, sending back {damage}");
+                if (Helpers.InDebugMode()) ModLogger.LogInfo($"Got {damageInfo.damage} damage, sending back {damage}");
 
                 // Generate projectile
                 var projectileInfo = new FireProjectileInfo
@@ -167,7 +169,7 @@ namespace Tempest.Items
                     //crit = ,
                 };
 
-                //for (int i = 0; i < 100; i++)
+                for (int i = 0; i < count; i++)
                 {
                     var positionChosen = damageInfo.position + new Vector3(
                         UnityEngine.Random.Range(-5, 5),
@@ -177,10 +179,11 @@ namespace Tempest.Items
                     projectileInfo.rotation = RoR2.Util.QuaternionSafeLookRotation(positionChosen - damageInfo.position);
 
                     ProjectileManager.instance.FireProjectile(projectileInfo);
-                //}
+                    
+                }
             }
-
             orig(self, damageInfo);
+            return;
         }
     }
 }

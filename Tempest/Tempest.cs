@@ -41,8 +41,12 @@ namespace Tempest
         public List<BaseSystem> Systems = new List<BaseSystem>();
 
         public static AssetBundle MainAssets;
+
+        public static Dictionary<string, ItemDef> CustomItems = new Dictionary<string, ItemDef>();
+
         public void Awake()
         {
+            
             ModLogger = this.Logger;
 
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Tempest.tempest_assets"))
@@ -85,7 +89,7 @@ namespace Tempest
                 if (ValidateItem(item, Items))
                 {
                     item.Init(Config);
-
+                    CustomItems.Add(item.ItemDef.name, item.ItemDef);
                     ModLogger.LogInfo("Item: " + item.ItemName + " initialized!");
                 }
                 else

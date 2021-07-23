@@ -1,6 +1,7 @@
 ﻿using BepInEx.Configuration;
 using R2API;
 using RoR2;
+using System;
 using UnityEngine;
 using static Tempest.Tempest;
 
@@ -23,6 +24,8 @@ namespace Tempest.Equipment
         public override Sprite EquipmentIcon => MainAssets.LoadAsset<Sprite>("GeminiIcon.png");
 
         public override float Cooldown => 6f;
+
+        public int Counter = 1;
 
         public override ItemDisplayRuleDict CreateItemDisplayRules()
         {
@@ -57,9 +60,7 @@ namespace Tempest.Equipment
 
         public override void SetupHooks()
         {
-
         }
-
 
         protected override bool PerformEquipmentAction(EquipmentSlot slot)
         {
